@@ -9,6 +9,7 @@
 
 #define LOOP_PERIOD_MS 4
 #define DEBOUNCE_TIME_MS 20
+#define LONG_PRESS_TIME_MS 500
 #define ANIM_PERIOD_MS 5000
 #define ADVANCE_PER_LOOP UINT16_MAX / (ANIM_PERIOD_MS / LOOP_PERIOD_MS)
 
@@ -41,27 +42,29 @@ void handle_switch() {
   if (switch_state_last != SWITCH_STATE) {
     switch_state_last = SWITCH_STATE;
     switch_cnt = 0;
+    return;
   }
-  
-  if (switch_cnt > DEBOUNCE_TIME_MS / LOOP_PERIOD_MS) {
-    if (switch_state_last && !switch_pressed) {
+
+  if (switch_cnt < LONG_PRESS_TIME_MS / LOOP_PERIOD_MS) {
+    ++switch_cnt;
+  } else if (!switch_long_pressed && switch_state_last) {
+    REG_RED ^= 0xff;  // code
+    switch_long_pressed = true;
+  }
+
+  if (switch_cnt < DEBOUNCE_TIME_MS / LOOP_PERIOD_MS) {
+    return;
+  }
+
+  if (switch_state_last) {
+    if (!switch_pressed) {
       REG_BLUE ^= 0xff;  // code
       switch_pressed = true;
-    } else if (!switch_state_last) {
-      switch_pressed = false;
-      switch_long_pressed = false;
     }
-  }
-  if (switch_cnt > 500 && !switch_long_pressed && switch_state_last == true) {
-    REG_GREEN ^= 0xFF;
-    switch_long_pressed = true;
   } else {
-    ++switch_cnt;
+    switch_pressed = false;
+    switch_long_pressed = false;
   }
-}
-
-void handle() {
-  REG_BLUE ^= 0xff;  // code
 }
 
 int main() {
