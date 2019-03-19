@@ -1,7 +1,5 @@
 #include "rgb_functions.h"
 
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
-
 const uint8_t sine_uint8[] = {
     0,   0,   0,   1,   1,   1,   2,   2,   3,   4,   5,   5,   6,   7,   9,
     10,  11,  12,  14,  15,  17,  18,  20,  21,  23,  25,  27,  29,  31,  33,
@@ -27,10 +25,23 @@ uint8_t sine_rgb(uint8_t step) {
   return sine_uint8[((uint16_t)step * UINT8_MAX) / RGB_BLEND_FACTOR];
 }
 
+RGB_state off(uint8_t _) {
+  RGB_state state = {.red = 0, .green = 0, .blue = 0};
+  return state;
+}
+
 RGB_state rainbow(uint8_t step) {
-  RGB_state state = {
-      .red = sine_rgb(step),
-      .green = sine_rgb((step + 85) % 255),
-      .blue = sine_rgb((step + 170) % 255),
-  };
+  RGB_state state = {.red = sine_rgb(step),
+                     .green = sine_rgb((step + 85) % 255),
+                     .blue = sine_rgb((step + 170) % 255)};
+}
+
+RGB_state red(uint8_t _) {
+  RGB_state state = {.red = 0xFF, .green = 0, .blue = 0};
+}
+RGB_state green(uint8_t _) {
+  RGB_state state = {.red = 0, .green = 0xFF, .blue = 0};
+}
+RGB_state blue(uint8_t _) {
+  RGB_state state = {.red = 0, .green = 0, .blue = 0xFF};
 }

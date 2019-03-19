@@ -9,13 +9,13 @@ COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 all:	main.hex
 
 .c.o:
-	$(COMPILE) -c $< -o $@
+	$(COMPILE) -c $< -o $@ 
 
 flash:	all
 	$(UPLOAD)main.hex
 
 clean:
-	rm -f main.hex main.elf $(OBJECTS)
+	rm -f main.hex main.elf *.o
 
 main.elf: $(OBJECTS)
 	$(COMPILE) -o main.elf $(OBJECTS)

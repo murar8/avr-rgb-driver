@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <stdbool.h>
 #include <util/delay.h>
+#include "rgb_functions.h"
 
 #define REG_GREEN OCR0A
 #define REG_RED OCR0B
@@ -13,7 +14,8 @@
 #define ANIM_PERIOD_MS 5000
 #define ADVANCE_PER_LOOP UINT16_MAX / (ANIM_PERIOD_MS / LOOP_PERIOD_MS)
 
-typedef (*on_click_function)();
+
+uint8_t current_function, current_mode = 0;
 
 void init_timers() {
   DDRB |= (1 << PB0) | (1 << PB1) | (1 << PB4);
@@ -34,37 +36,62 @@ void init_switch() {
   DDRB |= (1 << PB3);   // Use PB3 as GND
 }
 
+void on_press() {
+  switch (current_mode) {
+    case 0:
+      if (current_function >= ARRAY_LEN(RGB_FUNCTIONS_MODE0) - 1) {
+        current_function = 0;
+        return;
+      }
+    case 1:
+      if (current_function >= ARRAY_LEN(RGB_FUNCTIONS_MODE1) - 1) {
+        current_function = 0;
+        return;
+      }
+  }
+  ++current_function;
+}
+
+void on_long_press() {
+  current_mode = !current_mode;
+  current_function = 0;
+}
+
 void handle_switch() {
-  static bool switch_pressed = false, switch_long_pressed = false,
-              switch_state_last = false;
   static uint16_t switch_cnt = 0;
 
-  if (switch_state_last != SWITCH_STATE) {
-    switch_state_last = SWITCH_STATE;
-    switch_cnt = 0;
-    return;
-  }
-
-  if (switch_cnt < LONG_PRESS_TIME_MS / LOOP_PERIOD_MS) {
+  if (switch_cnt < UINT16_MAX) {
     ++switch_cnt;
-  } else if (!switch_long_pressed && switch_state_last) {
-    REG_RED ^= 0xff;  // code
-    switch_long_pressed = true;
   }
 
-  if (switch_cnt < DEBOUNCE_TIME_MS / LOOP_PERIOD_MS) {
-    return;
-  }
-
-  if (switch_state_last) {
-    if (!switch_pressed) {
-      REG_BLUE ^= 0xff;  // code
-      switch_pressed = true;
+  if (SWITCH_STATE) {
+    if (switch_cnt == LONG_PRESS_TIME_MS / LOOP_PERIOD_MS) {
+      on_long_press();
     }
   } else {
-    switch_pressed = false;
-    switch_long_pressed = false;
+    if (switch_cnt > DEBOUNCE_TIME_MS / LOOP_PERIOD_MS &&
+        switch_cnt < LONG_PRESS_TIME_MS / LOOP_PERIOD_MS) {
+      on_press();
+    }
+    switch_cnt = 0;
   }
+}
+
+void animate_leds() {
+  static uint8_t step = 0;
+
+  RGB_state state;
+  switch (current_mode) {
+    case 0:
+      state = RGB_FUNCTIONS_MODE0[current_function](step);
+    case 1:
+      state = RGB_FUNCTIONS_MODE1[current_function](step);
+  }
+  REG_RED = state.red;
+  REG_GREEN = state.green;
+  REG_BLUE = state.blue;
+
+  ++step;
 }
 
 int main() {
@@ -72,6 +99,7 @@ int main() {
   init_switch();
   while (1) {
     handle_switch();
+    animate_leds();
     _delay_ms(LOOP_PERIOD_MS);
   }
 }

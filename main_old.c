@@ -26,7 +26,6 @@
 #define RGB_BLEND_FACTOR 200
 
 typedef void (*rgb_function)(uint8_t);
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
 const uint8_t sine_uint8[] = {
     0,   0,   0,   1,   1,   1,   2,   2,   3,   4,   5,   5,   6,   7,   9,
