@@ -1,6 +1,6 @@
 DEVICE     = attiny85           # See avr-help for all possible devices
 CLOCK      = 16000000           # 16Mhz
-OBJECTS    = main.o             # Add more objects for each .c file here
+OBJECTS    = main.o rgb_functions.o            # Add more objects for each .c file here
 
 UPLOAD = avrdude -P /dev/ttyUSB0 -c avrisp -b 19200 -p t85 -U flash:w:
 COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)

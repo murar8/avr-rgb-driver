@@ -34,14 +34,18 @@ RGB_state rainbow(uint8_t step) {
   RGB_state state = {.red = sine_rgb(step),
                      .green = sine_rgb((step + 85) % 255),
                      .blue = sine_rgb((step + 170) % 255)};
+  return state;
 }
 
 RGB_state red(uint8_t _) {
   RGB_state state = {.red = 0xFF, .green = 0, .blue = 0};
+  return state;
 }
 RGB_state green(uint8_t _) {
   RGB_state state = {.red = 0, .green = 0xFF, .blue = 0};
+  return state;
 }
 RGB_state blue(uint8_t _) {
   RGB_state state = {.red = 0, .green = 0, .blue = 0xFF};
+  return state;
 }
