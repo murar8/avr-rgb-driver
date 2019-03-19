@@ -2,6 +2,7 @@
     "files.associations": {
         "io.h": "c",
         "usbdrv.h": "c",
-        "interrupt.h": "c"
+        "interrupt.h": "c",
+        "stdlib.h": "c"
     }
 }

@@ -8,14 +8,12 @@
 #define REG_BLUE OCR1B
 #define SWITCH_STATE !(PINB & (1 << PINB2))
 
-#define LOOP_PERIOD_MS 4
+#define LOOP_PERIOD_MS 1
+
+#define ANIM_PERIOD_MS 3000
+
 #define DEBOUNCE_TIME_MS 20
 #define LONG_PRESS_TIME_MS 500
-#define ANIM_PERIOD_MS 5000
-#define ADVANCE_PER_LOOP UINT16_MAX / (ANIM_PERIOD_MS / LOOP_PERIOD_MS)
-
-
-uint8_t current_function, current_mode = 0;
 
 void init_timers() {
   DDRB |= (1 << PB0) | (1 << PB1) | (1 << PB4);
@@ -36,26 +34,9 @@ void init_switch() {
   DDRB |= (1 << PB3);   // Use PB3 as GND
 }
 
-void on_press() {
-  switch (current_mode) {
-    case 0:
-      if (current_function >= ARRAY_LEN(RGB_FUNCTIONS_MODE0) - 1) {
-        current_function = 0;
-        return;
-      }
-    case 1:
-      if (current_function >= ARRAY_LEN(RGB_FUNCTIONS_MODE1) - 1) {
-        current_function = 0;
-        return;
-      }
-  }
-  ++current_function;
-}
+void on_press() {}
 
-void on_long_press() {
-  current_mode = !current_mode;
-  current_function = 0;
-}
+void on_long_press() {}
 
 void handle_switch() {
   static uint16_t switch_cnt = 0;
@@ -78,20 +59,14 @@ void handle_switch() {
 }
 
 void animate_leds() {
-  static uint8_t step = 0;
+  static uint16_t step = 0;
 
-  RGB_state state;
-  switch (current_mode) {
-    case 0:
-      state = RGB_FUNCTIONS_MODE0[current_function](step);
-    case 1:
-      state = RGB_FUNCTIONS_MODE1[current_function](step);
-  }
-  REG_RED = state.red;
-  REG_GREEN = state.green;
-  REG_BLUE = state.blue;
+  rgb_value_t rgb = random_value((step / UINT8_MAX));
+  REG_RED = rgb_red(rgb);
+  REG_GREEN = rgb_green(rgb);
+  REG_BLUE = rgb_blue(rgb);
 
-  ++step;
+  step += UINT16_MAX / (ANIM_PERIOD_MS / LOOP_PERIOD_MS);
 }
 
 int main() {

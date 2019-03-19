@@ -3,26 +3,23 @@
 
 #include <inttypes.h>
 
-#define RGB_BLEND_FACTOR 200
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
+#define RAINBOW_BLEND_FACTOR 200
 
-typedef struct rgb_state_t {
-  uint8_t red;
-  uint8_t green;
-  uint8_t blue;
-} RGB_state;
+typedef uint32_t rgb_value_t;
 
-typedef RGB_state (*rgb_function)(uint8_t);
+uint8_t rgb_red(rgb_value_t rgb);
+uint8_t rgb_green(rgb_value_t rgb);
+uint8_t rgb_blue(rgb_value_t rgb);
 
-RGB_state off(uint8_t _);
+const rgb_value_t COLORS[7];
 
-RGB_state rainbow(uint8_t step);
+rgb_value_t off(uint8_t _);
 
-RGB_state red(uint8_t _);
-RGB_state green(uint8_t _);
-RGB_state blue(uint8_t _);
+rgb_value_t rainbow(uint8_t step);
+rgb_value_t random_value(uint8_t step);
 
-const rgb_function RGB_FUNCTIONS_MODE0[] = {off, rainbow};
-const rgb_function RGB_FUNCTIONS_MODE1[] = {off, red, green, blue};
+rgb_value_t red(uint8_t _);
+rgb_value_t green(uint8_t _);
+rgb_value_t blue(uint8_t _);
 
 #endif
