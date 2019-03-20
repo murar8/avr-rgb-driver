@@ -2,16 +2,9 @@
 #include <stdlib.h>
 
 #define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
+#define TO_RGB(r, g, b) (((uint32_t)r << 16) + ((uint16_t)g << 8) + b)
 
-#define VIOLET 0x9400D3
-#define INDIGO 0x4B0082
-#define BLUE 0x0000FF
-#define GREEN 0x00FF00
-#define YELLOW 0xFFFF00
-#define ORANGE 0xFF7F00
-#define RED 0xFF0000
-
-const rgb_value_t COLORS[] = {VIOLET, INDIGO, BLUE, GREEN, YELLOW, ORANGE, RED};
+const uint32_t COLORS[] = {VIOLET, INDIGO, BLUE, GREEN, YELLOW, ORANGE, RED};
 
 const uint8_t sine_uint8[] = {
     0,   0,   0,   1,   1,   1,   2,   2,   3,   4,   5,   5,   6,   7,   9,
@@ -33,30 +26,21 @@ const uint8_t sine_uint8[] = {
     9,   7,   6,   5,   5,   4,   3,   2,   2,   1,   1,   1,   0,   0,   0,
     0};
 
-inline uint8_t rgb_red(rgb_value_t rgb) { return (rgb >> 16) & 0xFF; }
-inline uint8_t rgb_green(rgb_value_t rgb) { return (rgb >> 8) & 0xFF; }
-inline uint8_t rgb_blue(rgb_value_t rgb) { return rgb & 0xFF; }
-inline rgb_value_t to_rgb(uint8_t r, uint8_t g, uint8_t b) {
-  return ((uint32_t)r << 16) + ((uint16_t)g << 8) + b;
-}
-
-rgb_value_t off(uint8_t _) { return 0; }
-
-uint8_t sine_rgb(uint8_t step) {
+uint8_t sine_shifted(uint8_t step) {
   if (step > RAINBOW_BLEND_FACTOR) return 0;
   return sine_uint8[((uint16_t)step * UINT8_MAX) / RAINBOW_BLEND_FACTOR];
 }
 
-rgb_value_t rainbow(uint8_t step) {
+uint32_t rainbow(uint8_t step) {
   uint8_t red, green, blue;
-  red = sine_rgb(step);
-  green = sine_rgb((step + 85) % 255);
-  blue = sine_rgb((step + 170) % 255);
-  return to_rgb(red, green, blue);
+  red = sine_shifted(step);
+  green = sine_shifted((step + 85) % 255);
+  blue = sine_shifted((step + 170) % 255);
+  return TO_RGB(red, green, blue);
 }
 
-rgb_value_t random_value(uint8_t step) {
-  static uint32_t old_color = 0xFFFFFF, rand_color = 0;
+uint32_t random_value(uint8_t step) {
+  static uint32_t old_color = 0, rand_color = 0;
 
   if (step == 0) {
     uint8_t rand_index = ((uint64_t)rand() * ARRAY_LEN(COLORS)) / RAND_MAX;
@@ -69,9 +53,5 @@ rgb_value_t random_value(uint8_t step) {
   uint32_t weighted_rand = ((uint64_t)rand_color * step) / UINT8_MAX;
   uint32_t current_color = (weighted_old + weighted_rand);
 
-  return current_color;
+  return rand_color;
 }
-
-rgb_value_t red(uint8_t _) { return 0xFF0000; }
-rgb_value_t green(uint8_t _) { return 0x00FF00; }
-rgb_value_t blue(uint8_t _) { return 0x0000FF; }
