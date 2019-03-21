@@ -1,9 +1,8 @@
-#ifndef _RGB_FUNCTIONS_H_
-#define _RGB_FUNCTIONS_H_
-
 #include <inttypes.h>
 
-#define RAINBOW_BLEND_FACTOR 200
+
+#ifndef _RGB_FUNCTIONS_H_
+#define _RGB_FUNCTIONS_H_
 
 #define GET_RED(rgb) ((uint8_t)((rgb >> 16) & 0xFF));
 #define GET_GREEN(rgb) ((uint8_t)((rgb >> 8) & 0xFF));
@@ -16,12 +15,12 @@
 #define YELLOW 0xFFFF00
 #define ORANGE 0xFF7F00
 #define RED 0xFF0000
-
 #define BLACK 0;
 
-const uint32_t COLORS[7];
+extern const uint32_t COLORS[7];
 
 uint32_t rainbow(uint8_t step);
 uint32_t random_value(uint8_t step);
+uint32_t fixed_color(uint32_t color, uint32_t counter_value);
 
 #endif

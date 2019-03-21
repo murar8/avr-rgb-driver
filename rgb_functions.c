@@ -1,5 +1,6 @@
 #include "rgb_functions.h"
 #include <stdlib.h>
+#include "config.h"
 
 #define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 #define TO_RGB(r, g, b) (((uint32_t)r << 16) + ((uint16_t)g << 8) + b)
@@ -26,23 +27,23 @@ const uint8_t sine_uint8[] = {
     9,   7,   6,   5,   5,   4,   3,   2,   2,   1,   1,   1,   0,   0,   0,
     0};
 
-uint8_t sine_shifted(uint8_t step) {
-  if (step > RAINBOW_BLEND_FACTOR) return 0;
-  return sine_uint8[((uint16_t)step * UINT8_MAX) / RAINBOW_BLEND_FACTOR];
+uint8_t sine_shifted(uint8_t step, uint8_t blend_factor) {
+  if (step > blend_factor) return 0;
+  return sine_uint8[((uint16_t)step * UINT8_MAX) / blend_factor];
 }
 
 uint32_t rainbow(uint8_t step) {
   uint8_t red, green, blue;
-  red = sine_shifted(step);
-  green = sine_shifted((step + 85) % 255);
-  blue = sine_shifted((step + 170) % 255);
+  red = sine_shifted(step, RAINBOW_BLEND_FACTOR);
+  green = sine_shifted((step + 85) % 255, RAINBOW_BLEND_FACTOR);
+  blue = sine_shifted((step + 170) % 255, RAINBOW_BLEND_FACTOR);
   return TO_RGB(red, green, blue);
 }
 
 uint32_t random_value(uint8_t step) {
   static uint32_t old_color = 0, rand_color = 0;
 
-  if (step == 0) {
+  /*if (step == 0) {
     uint8_t rand_index = ((uint64_t)rand() * ARRAY_LEN(COLORS)) / RAND_MAX;
     old_color = rand_color;
     rand_color = COLORS[rand_index];
@@ -51,7 +52,26 @@ uint32_t random_value(uint8_t step) {
   uint32_t weighted_old =
       ((uint64_t)old_color * (UINT8_MAX - step)) / UINT8_MAX;
   uint32_t weighted_rand = ((uint64_t)rand_color * step) / UINT8_MAX;
-  uint32_t current_color = (weighted_old + weighted_rand);
+  uint32_t current_color = (weighted_old + weighted_rand);*/
 
   return rand_color;
+}
+
+uint32_t fixed_color(uint32_t color, uint32_t counter_value) {
+  static uint32_t counter_start = 0, last_color = 0;
+  static uint8_t in_transition = 0;
+
+  if (color != last_color) {
+    if (!in_transition) {
+      counter_start = counter_value;
+      in_transition = 1;
+    }
+    if (counter_value - counter_start > TRANSITION_DELTA) {
+      last_color = color;
+      in_transition = 0;
+    }
+    uint8_t red, green, blue;
+    red = GET_RED()
+  }
+  return color;
 }

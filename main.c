@@ -1,21 +1,8 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <util/atomic.h>
+#include "config.h"
 #include "rgb_functions.h"
-
-#define ANIM_PERIOD_MS 3000
-
-#define DEBOUNCE_TIME_MS 20
-#define LONG_PRESS_TIME_MS 500
-
-#define TIMER_PERIOD 32
-#define ANIMATION_DELTA ((ANIM_PERIOD_MS * 1000UL) / TIMER_PERIOD)
-#define DEBOUNCE_DELTA ((DEBOUNCE_TIME_MS * 1000UL) / TIMER_PERIOD)
-#define LONG_PRESS_DELTA ((LONG_PRESS_TIME_MS * 1000UL) / TIMER_PERIOD)
-
-#ifndef F_CPU
-#define F_CPU 16000000
-#endif
 
 #define REG_GREEN OCR0A
 #define REG_RED OCR0B
@@ -24,10 +11,7 @@
 #define SWITCH_STATE (!(PINB & (1 << PINB2)))
 #define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
-enum mode_t { OFF, RAINBOW, RANDOM, FIXED };
-
-enum mode_t mode = RANDOM;
-uint32_t color_index;
+uint8_t color_index;
 
 volatile uint32_t counter = 0;
 
@@ -55,6 +39,22 @@ void init_switch() {
   DDRB |= (1 << PB3);   // Use PB3 as GND
 }
 
+void on_press() {
+  if (color_index < ARRAY_LEN(COLORS) - 1) {
+    ++color_index;
+  } else {
+    color_index = 0;
+  }
+}
+
+void on_long_press() {
+  /*if (mode >= FIXED) {
+    mode = OFF;
+  } else {
+    ++mode;
+  }*/
+}
+
 void handle_switch(uint32_t counter_value) {
   static uint32_t counter_start = 0;
   static uint8_t long_pressed = 0;
@@ -63,48 +63,26 @@ void handle_switch(uint32_t counter_value) {
 
   if (!SWITCH_STATE) {
     if (delta >= DEBOUNCE_DELTA && !long_pressed) {
-      if (color_index < ARRAY_LEN(COLORS) - 1 && mode == FIXED) {
-        ++color_index;
-      } else {
-        color_index = 0;
-      }
+      on_press();
     }
     counter_start = counter_value;
     long_pressed = 0;
   } else {
     if (delta >= LONG_PRESS_DELTA && !long_pressed) {
-      if (mode >= FIXED) {
-        mode = OFF;
-      } else {
-        ++mode;
-      }
+      on_long_press();
       long_pressed = 1;
     }
   }
 }
 
 void handle_leds(uint32_t counter_value) {
-  uint8_t step =
-      ((counter_value % ANIMATION_DELTA) * UINT8_MAX) / ANIMATION_DELTA;
-  uint32_t rgb;
-  switch (mode) {
-    case OFF:
-      rgb = BLACK;
-      break;
-    case RAINBOW:
-      rgb = rainbow(step);
-      break;
-    case RANDOM:
-      rgb = random_value(step);
-      break;
-    case FIXED:
-      rgb = COLORS[color_index];
-      break;
-  }
+  // uint8_t step = ((counter_value % ANIMATION_DELTA) * UINT8_MAX) /
+  // ANIMATION_DELTA;
+  //uint32_t rgb = fixed_color(COLORS[color_index], counter_value);
 
-  REG_RED = GET_RED(rgb);
-  REG_GREEN = GET_GREEN(rgb);
-  REG_BLUE = GET_BLUE(rgb);
+  //REG_RED = GET_RED(rgb);
+  //REG_GREEN = GET_GREEN(rgb);
+  //REG_BLUE = GET_BLUE(rgb);
 }
 
 int main() {
