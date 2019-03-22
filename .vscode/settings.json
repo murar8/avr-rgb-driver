@@ -5,6 +5,7 @@
         "interrupt.h": "c",
         "stdlib.h": "c",
         "rgb_functions.h": "c",
-        "config.h": "c"
+        "config.h": "c",
+        "inttypes.h": "c"
     }
 }

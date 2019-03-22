@@ -2,10 +2,14 @@
 #include <stdlib.h>
 #include "config.h"
 
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
+#define RAINBOW_ANIM_DELTA ((RAINBOW_PERIOD_MS * 1000UL) / TIMER_PERIOD)
+#define TRANS_ANIM_DELTA ((COLOR_TRANSITION_PERIOD_MS * 1000UL) / TIMER_PERIOD)
+#define COLOR_SWAP_DELTA ((COLOR_SWAP_PERIOD_MS * 1000UL) / TIMER_PERIOD)
+
 #define TO_RGB(r, g, b) (((uint32_t)r << 16) + ((uint16_t)g << 8) + b)
 
-const uint32_t COLORS[] = {VIOLET, INDIGO, BLUE, GREEN, YELLOW, ORANGE, RED};
+const uint32_t COLORS[COLORS_LEN] = {VIOLET, INDIGO, BLUE, GREEN,
+                                     YELLOW, ORANGE, RED};
 
 const uint8_t sine_uint8[] = {
     0,   0,   0,   1,   1,   1,   2,   2,   3,   4,   5,   5,   6,   7,   9,
@@ -27,51 +31,72 @@ const uint8_t sine_uint8[] = {
     9,   7,   6,   5,   5,   4,   3,   2,   2,   1,   1,   1,   0,   0,   0,
     0};
 
-uint8_t sine_shifted(uint8_t step, uint8_t blend_factor) {
-  if (step > blend_factor) return 0;
-  return sine_uint8[((uint16_t)step * UINT8_MAX) / blend_factor];
+uint8_t rainbow_half_sine(uint8_t step) {
+  if (step > RAINBOW_BLEND_FACTOR) return 0;
+  return sine_uint8[((uint16_t)step * UINT8_MAX) / RAINBOW_BLEND_FACTOR];
 }
 
-uint32_t rainbow(uint8_t step) {
+uint8_t animation_step(uint32_t counter_value) {
+  return ((counter_value % RAINBOW_ANIM_DELTA) * UINT8_MAX) /
+         RAINBOW_ANIM_DELTA;
+}
+
+uint8_t interpolate(uint8_t a, uint8_t b, uint8_t weight) {
+  return ((b - a) * weight / UINT8_MAX) + a;
+}
+
+uint32_t rand_uint32(uint32_t seed) { return (1664525 * seed + 1013904223); }
+
+uint32_t rgb_weighted_avg(uint32_t color_start, uint32_t color_end,
+                          uint8_t step) {
   uint8_t red, green, blue;
-  red = sine_shifted(step, RAINBOW_BLEND_FACTOR);
-  green = sine_shifted((step + 85) % 255, RAINBOW_BLEND_FACTOR);
-  blue = sine_shifted((step + 170) % 255, RAINBOW_BLEND_FACTOR);
+  red = interpolate(GET_RED(color_start), GET_RED(color_end), step);
+  green = interpolate(GET_GREEN(color_start), GET_GREEN(color_end), step);
+  blue = interpolate(GET_BLUE(color_start), GET_BLUE(color_end), step);
+
   return TO_RGB(red, green, blue);
 }
 
-uint32_t random_value(uint8_t step) {
-  static uint32_t old_color = 0, rand_color = 0;
+uint32_t rainbow(uint32_t counter_value) {
+  uint8_t step = animation_step(counter_value);
+  uint8_t red, green, blue;
+  red = rainbow_half_sine(step);
+  green = rainbow_half_sine(step + 85);
+  blue = rainbow_half_sine(step + 170);
+  return TO_RGB(red, green, blue);
+}
 
-  /*if (step == 0) {
-    uint8_t rand_index = ((uint64_t)rand() * ARRAY_LEN(COLORS)) / RAND_MAX;
-    old_color = rand_color;
-    rand_color = COLORS[rand_index];
+uint32_t random_value(uint32_t counter_value) {
+  static uint32_t old_color;
+  uint32_t rnd = rand_uint32(counter_value / COLOR_SWAP_DELTA);
+  uint32_t color = COLORS[rnd % COLORS_LEN];
+  uint32_t step = counter_value % COLOR_SWAP_DELTA;
+  if (step < TRANS_ANIM_DELTA) {
+    return rgb_weighted_avg(old_color, color,
+                            UINT8_MAX * step / TRANS_ANIM_DELTA);
+  } else {
+    old_color = color;
+    return color;
   }
-
-  uint32_t weighted_old =
-      ((uint64_t)old_color * (UINT8_MAX - step)) / UINT8_MAX;
-  uint32_t weighted_rand = ((uint64_t)rand_color * step) / UINT8_MAX;
-  uint32_t current_color = (weighted_old + weighted_rand);*/
-
-  return rand_color;
 }
 
 uint32_t fixed_color(uint32_t color, uint32_t counter_value) {
-  static uint32_t counter_start = 0, last_color = 0;
+  static uint32_t counter_start = 0, color_last = 0;
   static uint8_t in_transition = 0;
 
-  if (color != last_color) {
+  if (color != color_last) {
     if (!in_transition) {
       counter_start = counter_value;
       in_transition = 1;
     }
-    if (counter_value - counter_start > TRANSITION_DELTA) {
-      last_color = color;
+    uint32_t delta = counter_value - counter_start;
+    if (delta > TRANS_ANIM_DELTA) {
+      color_last = color;
       in_transition = 0;
     }
-    uint8_t red, green, blue;
-    red = GET_RED()
+
+    uint8_t step = (uint32_t)UINT8_MAX * delta / TRANS_ANIM_DELTA;
+    return rgb_weighted_avg(color_last, color, step);
   }
   return color;
 }

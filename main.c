@@ -1,17 +1,31 @@
+#include <avr/eeprom.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <util/atomic.h>
 #include "config.h"
 #include "rgb_functions.h"
 
+#ifndef F_CPU
+#define F_CPU 16000000
+#endif
+
+#define DEBOUNCE_DELTA ((DEBOUNCE_PERIOD_MS * 1000UL) / TIMER_PERIOD)
+#define LONG_PRESS_DELTA ((LONG_PRESS_PERIOD_MS * 1000UL) / TIMER_PERIOD)
+
 #define REG_GREEN OCR0A
 #define REG_RED OCR0B
 #define REG_BLUE OCR1B
-
 #define SWITCH_STATE (!(PINB & (1 << PINB2)))
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
-uint8_t color_index;
+#define EEPROM_ADDR_MODE (uint8_t*)0
+#define EEPROM_ADDR_COLOR (uint8_t*)1
+
+#define NUM_MODES 4
+
+enum modes_t { OFF, RAINBOW, RANDOM, FIXED };
+
+enum modes_t mode_index = RAINBOW;
+uint8_t color_index = 0;
 
 volatile uint32_t counter = 0;
 
@@ -40,19 +54,15 @@ void init_switch() {
 }
 
 void on_press() {
-  if (color_index < ARRAY_LEN(COLORS) - 1) {
-    ++color_index;
-  } else {
-    color_index = 0;
+  if (mode_index == FIXED) {
+    color_index = (color_index + 1) % COLORS_LEN;
+    eeprom_write_byte(EEPROM_ADDR_COLOR, color_index);
   }
 }
 
 void on_long_press() {
-  /*if (mode >= FIXED) {
-    mode = OFF;
-  } else {
-    ++mode;
-  }*/
+  mode_index = (mode_index + 1) % NUM_MODES;
+  eeprom_write_byte(EEPROM_ADDR_MODE, mode_index);
 }
 
 void handle_switch(uint32_t counter_value) {
@@ -76,13 +86,26 @@ void handle_switch(uint32_t counter_value) {
 }
 
 void handle_leds(uint32_t counter_value) {
-  // uint8_t step = ((counter_value % ANIMATION_DELTA) * UINT8_MAX) /
-  // ANIMATION_DELTA;
-  //uint32_t rgb = fixed_color(COLORS[color_index], counter_value);
+  uint32_t rgb;
 
-  //REG_RED = GET_RED(rgb);
-  //REG_GREEN = GET_GREEN(rgb);
-  //REG_BLUE = GET_BLUE(rgb);
+  switch (mode_index) {
+    case OFF:
+      rgb = BLACK;
+      break;
+    case RAINBOW:
+      rgb = rainbow(counter_value);
+      break;
+    case RANDOM:
+      rgb = random_value(counter_value);
+      break;
+    case FIXED:
+      rgb = fixed_color(COLORS[color_index], counter_value);
+      break;
+  }
+
+  REG_RED = GET_RED(rgb);
+  REG_GREEN = GET_GREEN(rgb);
+  REG_BLUE = GET_BLUE(rgb);
 }
 
 int main() {
@@ -90,6 +113,8 @@ int main() {
   init_switch();
 
   uint32_t local_counter;
+  mode_index = eeprom_read_byte(EEPROM_ADDR_MODE);
+  color_index = eeprom_read_byte(EEPROM_ADDR_COLOR);
 
   while (1) {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { local_counter = counter; }

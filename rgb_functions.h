@@ -1,12 +1,11 @@
 #include <inttypes.h>
 
-
 #ifndef _RGB_FUNCTIONS_H_
 #define _RGB_FUNCTIONS_H_
 
-#define GET_RED(rgb) ((uint8_t)((rgb >> 16) & 0xFF));
-#define GET_GREEN(rgb) ((uint8_t)((rgb >> 8) & 0xFF));
-#define GET_BLUE(rgb) ((uint8_t)(rgb & 0xFF));
+#define GET_RED(rgb) (((rgb >> 16) & 0xFF))
+#define GET_GREEN(rgb) (((rgb >> 8) & 0xFF))
+#define GET_BLUE(rgb) ((rgb & 0xFF))
 
 #define VIOLET 0x9400D3
 #define INDIGO 0x4B0082
@@ -17,10 +16,11 @@
 #define RED 0xFF0000
 #define BLACK 0;
 
-extern const uint32_t COLORS[7];
+#define COLORS_LEN 7
+extern const uint32_t COLORS[COLORS_LEN];
 
-uint32_t rainbow(uint8_t step);
-uint32_t random_value(uint8_t step);
+uint32_t rainbow(uint32_t counter_value);
+uint32_t random_value(uint32_t counter_value);
 uint32_t fixed_color(uint32_t color, uint32_t counter_value);
 
 #endif
