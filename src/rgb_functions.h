@@ -7,20 +7,22 @@
 #define GET_GREEN(rgb) (((rgb >> 8) & 0xFF))
 #define GET_BLUE(rgb) ((rgb & 0xFF))
 
-#define VIOLET 0x9400D3
-#define INDIGO 0x4B0082
+#define BLACK 0
+
+#define RED 0xFF0000
+#define MAGENTA 0xFF00FF
+#define VIOLET 0x7F00FF
 #define BLUE 0x0000FF
+#define CYAN 0x00FFFF
 #define GREEN 0x00FF00
 #define YELLOW 0xFFFF00
-#define ORANGE 0xFF7F00
-#define RED 0xFF0000
-#define BLACK 0;
+#define DARK_ORANGE 0xFF8000
 
-#define COLORS_LEN 7
-extern const uint32_t COLORS[COLORS_LEN];
+extern const uint8_t COLORS_LEN;
+extern const uint32_t COLORS[];
 
 uint32_t rainbow(uint32_t counter_value);
-uint32_t random_value(uint32_t counter_value);
+uint32_t slow_changing(uint32_t counter_value);
 uint32_t fixed_color(uint32_t color, uint32_t counter_value);
 
 #endif

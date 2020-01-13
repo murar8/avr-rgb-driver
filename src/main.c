@@ -22,7 +22,7 @@
 
 #define NUM_MODES 4
 
-enum modes_t { OFF, RAINBOW, RANDOM, FIXED };
+enum modes_t { OFF, RAINBOW, SLOW, FIXED };
 
 enum modes_t mode_index = RAINBOW;
 uint8_t color_index = 0;
@@ -86,7 +86,7 @@ void handle_switch(uint32_t counter_value) {
 }
 
 void handle_leds(uint32_t counter_value) {
-  uint32_t rgb;
+  uint32_t rgb = 0;
 
   switch (mode_index) {
     case OFF:
@@ -95,8 +95,8 @@ void handle_leds(uint32_t counter_value) {
     case RAINBOW:
       rgb = rainbow(counter_value);
       break;
-    case RANDOM:
-      rgb = random_value(counter_value);
+    case SLOW:
+      rgb = slow_changing(counter_value);
       break;
     case FIXED:
       rgb = fixed_color(COLORS[color_index], counter_value);

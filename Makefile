@@ -1,26 +1,35 @@
-DEVICE     = attiny85           # See avr-help for all possible devices
-CLOCK      = 16000000           # 16Mhz
-OBJECTS    = main.o rgb_functions.o            # Add more objects for each .c file here
+DEVICE     = attiny85
+CLOCK      = 16000000
+PROGRAMMER = avrisp
+PORT	   = /dev/ttyUSB0
 
-UPLOAD = avrdude -P /dev/ttyUSB0 -c avrisp -b 19200 -p t85 -U flash:w:
-COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
+CC    		= avr-gcc 
+CFLAGS 		= -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE) -Wno-main
+HEX 		= avr-objcopy -j .text -j .data -O ihex
+UPLOAD	    = avrdude -P $(PORT) -c $(PROGRAMMER) -p $(DEVICE) -b 19200 -U flash:w:
 
-# symbolic targets:
-all:	main.hex
+TARGET		= main
+SRCDIR    	= src
+OBJDIR		= obj
+BINDIR		= bin
 
-.c.o:
-	$(COMPILE) -c $< -o $@ 
+sources = $(wildcard src/*.c)
+objects = $(patsubst src/%.c, obj/%.o, $(sources))
 
-flash:	all
-	$(UPLOAD)main.hex
+default: upload
+
+obj/%.o: src/%.c
+	$(CC) -c -o $@ $^ $(CFLAGS)
+
+bin/$(TARGET).elf: $(objects)
+	$(CC) -o $@ $^ $(CFLAGS)
+
+bin/$(TARGET).hex: bin/$(TARGET).elf
+	$(HEX) $^ $@
+
+upload: bin/$(TARGET).hex
+	$(UPLOAD)$^
 
 clean:
-	rm -f main.hex main.elf *.o
-
-main.elf: $(OBJECTS)
-	$(COMPILE) -o main.elf $(OBJECTS)
-
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
-	avr-size --format=avr --mcu=$(DEVICE) main.elf
+	rm -f bin/**
+	rm -f obj/**
